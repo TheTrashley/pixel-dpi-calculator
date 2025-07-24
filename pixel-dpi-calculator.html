@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pixel vs DPI Calculator</title>
+<style>
+  :root {
+    --primary-color: #2a9d8f;
+    --secondary-color: #264653;
+    --background-color: #f4f4f9;
+    --text-color: #264653;
+    --input-bg: #e9f0f0;
+    --input-border: #ccc;
+    --error-color: #e76f51;
+  }
+  body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    margin: 0; padding: 0;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+    align-items: center;
+  }
+  .container {
+    background: white;
+    max-width: 400px;
+    width: 90%;
+    padding: 20px 30px;
+    border-radius: 10px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+  }
+  h1 {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    text-align: center;
+    color: var(--primary-color);
+  }
+  label {
+    display: block;
+    margin: 12px 0 6px 0;
+    font-weight: 600;
+  }
+  input[type="number"], select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1.8px solid var(--input-border);
+    font-size: 1rem;
+    background: var(--input-bg);
+    color: var(--secondary-color);
+    box-sizing: border-box;
+    transition: border-color 0.3s ease;
+  }
+  input[type="number"]:focus, select:focus {
+    border-color: var(--primary-color);
+    outline: none;
+  }
+  .row {
+    display: flex;
+    gap: 12px;
+  }
+  .row > div {
+    flex: 1;
+  }
+  button {
+    margin-top: 18px;
+    width: 100%;
+    padding: 12px 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: white;
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  button:hover {
+    background-color: #1e796d;
+  }
+  .output {
+    margin-top: 20px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    text-align: center;
+    color: var(--secondary-color);
+  }
+  .tooltip {
+    display: inline-block;
+    border-bottom: 1px dotted var(--secondary-color);
+    cursor: help;
+    color: var(--primary-color);
+    font-weight: bold;
+  }
+  small {
+    font-weight: normal;
+    font-size: 0.85rem;
+    color: var(--secondary-color);
+  }
+  .preset-container {
+    margin-top: 15px;
+  }
+  select.preset-select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1.8px solid var(--input-border);
+    font-size: 1rem;
+    background: var(--input-bg);
+    color: var(--secondary-color);
+    box-sizing: border-box;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Pixel vs DPI Calculator</h1>
+
+  <label for="presetSelect">Choose a Preset</label>
+  <select id="presetSelect" class="preset-select">
+    <option value="">-- Select Preset --</option>
+    <option value="tshirt">T-shirt Print (12" × 16", 300 DPI)</option>
+    <option value="mug">Mug Wrap (8" × 3.5", 300 DPI)</option>
+    <option value="posterA4">Poster A4 (8.27" × 11.7", 300 DPI)</option>
+    <option value="sticker">Sticker (3" × 3", 300 DPI)</option>
+    <option value="phonecase">Phone Case (2.8" × 5.5", 300 DPI)</option>
+  </select>
+
+  <label for="widthInput">Width</label>
+  <div class="row">
+    <input type="number" id="widthInput" min="0" step="0.01" placeholder="Enter width" />
+    <select id="widthUnitSelect">
+      <option value="in">inches (in)</option>
+      <option value="cm">centimeters (cm)</option>
+    </select>
+  </div>
+
+  <label for="heightInput">Height</label>
+  <div class="row">
+    <input type="number" id="heightInput" min="0" step="0.01" placeholder="Enter height" />
+    <select id="heightUnitSelect">
+      <option value="in">inches (in)</option>
+      <option value="cm">centimeters (cm)</option>
+    </select>
+  </div>
+
+  <label for="dpiSelect">
+    DPI
+    <span class="tooltip" title="Dots Per Inch - higher DPI means higher image resolution">?</span>
+  </label>
+  <select id="dpiSelect">
+    <option value="72">72</option>
+    <option value="96" selected>96</option>
+    <option value="150">150</option>
+    <option value="300">300</option>
+    <option value="600">600</option>
+    <option value="custom">Custom</option>
+  </select>
+  <input type="number" id="customDpiInput" min="1" max="1200" placeholder="Enter custom DPI" style="display:none; margin-top:8px;" />
+
+  <button id="calculateBtn">Calculate Pixels</button>
+
+  <div class="output" id="result">Enter values and click Calculate</div>
+</div>
+
+<script>
+  const widthInput = document.getElementById('widthInput');
+  const heightInput = document.getElementById('heightInput');
+  const widthUnitSelect = document.getElementById('widthUnitSelect');
+  const heightUnitSelect = document.getElementById('heightUnitSelect');
+  const dpiSelect = document.getElementById('dpiSelect');
+  const customDpiInput = document.getElementById('customDpiInput');
+  const calculateBtn = document.getElementById('calculateBtn');
+  const result = document.getElementById('result');
+  const presetSelect = document.getElementById('presetSelect');
+
+  const presets = {
+    tshirt: { width: 12, height: 16, unit: 'in', dpi: 300 },
+    mug: { width: 8, height: 3.5, unit: 'in', dpi: 300 },
+    posterA4: { width: 8.27, height: 11.7, unit: 'in', dpi: 300 },
+    sticker: { width: 3, height: 3, unit: 'in', dpi: 300 },
+    phonecase: { width: 2.8, height: 5.5, unit: 'in', dpi: 300 },
+  };
+
+  function convertToInches(value, unit) {
+    if (unit === 'cm') {
+      return value / 2.54;
+    }
+    return value;
+  }
+
+  function calculatePixels() {
+    let width = parseFloat(widthInput.value);
+    let height = parseFloat(heightInput.value);
+    let dpi = dpiSelect.value === 'custom' ? parseFloat(customDpiInput.value) : parseFloat(dpiSelect.value);
+
+    if (isNaN(width) || width <= 0 || isNaN(height) || height <= 0) {
+      result.textContent = 'Please enter valid positive numbers for width and height.';
+      return;
+    }
+    if (isNaN(dpi) || dpi <= 0) {
+      result.textContent = 'Please enter a valid positive DPI value.';
+      return;
+    }
+
+    width = convertToInches(width, widthUnitSelect.value);
+    height = convertToInches(height, heightUnitSelect.value);
+
+    const pixelsWidth = Math.round(width * dpi);
+    const pixelsHeight = Math.round(height * dpi);
+
+    result.textContent = `Result: ${pixelsWidth} px × ${pixelsHeight} px (Width × Height) at ${dpi} DPI`;
+  }
+
+  dpiSelect.addEventListener('change', () => {
+    if (dpiSelect.value === 'custom') {
+      customDpiInput.style.display = 'block';
+    } else {
+      customDpiInput.style.display = 'none';
+    }
+  });
+
+  calculateBtn.addEventListener('click', calculatePixels);
+
+  presetSelect.addEventListener('change', () => {
+    const preset = presets[presetSelect.value];
+    if (!preset) return;
+
+    widthInput.value = preset.width;
+    heightInput.value = preset.height;
+    widthUnitSelect.value = preset.unit;
+    heightUnitSelect.value = preset.unit;
+
+    if (Object.values(dpiSelect.options).some(opt => opt.value === String(preset.dpi))) {
+      dpiSelect.value = preset.dpi;
+      customDpiInput.style.display = 'none';
+    } else {
+      dpiSelect.value = 'custom';
+      customDpiInput.style.display = 'block';
+      customDpiInput.value = preset.dpi;
+    }
+    calculatePixels();
+  });
+</script>
+</body>
+</html>
